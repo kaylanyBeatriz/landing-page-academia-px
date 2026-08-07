@@ -140,9 +140,10 @@ function Index() {
               </span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Apresentações, ebook, modelo de formulário e template editável no Canva.
+              Apresentações, ebook, formulário de avaliação e template editável no Canva.
               Tudo organizado para instrutores aplicarem o treinamento com segurança e
-              profissionalismo. Preencha o cadastro e libere o download.
+              profissionalismo conforme exigido pela norma. Preencha o cadastro e libere o
+              download.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button
