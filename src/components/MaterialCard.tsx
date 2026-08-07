@@ -58,7 +58,7 @@ export function MaterialCard({ material, unlocked, onDownload, onRequestAccess }
             onClick={onRequestAccess}
             className="w-full border-primary/30 font-semibold text-primary transition-smooth hover:bg-primary-soft hover:text-primary"
           >
-            <Lock /> Bloqueado — cadastre-se
+            <Lock /> Bloqueado
           </Button>
         )}
       </div>
