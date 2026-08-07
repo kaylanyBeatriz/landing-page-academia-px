@@ -14,7 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      downloads: {
+        Row: {
+          created_at: string
+          evento: string
+          id: string
+          lead_id: string | null
+          material_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          evento: string
+          id?: string
+          lead_id?: string | null
+          material_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          evento?: string
+          id?: string
+          lead_id?: string | null
+          material_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "downloads_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "downloads_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          cargo: string
+          consentimento: boolean
+          created_at: string
+          email: string
+          empresa: string
+          id: string
+          nome_completo: string
+          telefone: string
+        }
+        Insert: {
+          cargo: string
+          consentimento?: boolean
+          created_at?: string
+          email: string
+          empresa: string
+          id?: string
+          nome_completo: string
+          telefone: string
+        }
+        Update: {
+          cargo?: string
+          consentimento?: boolean
+          created_at?: string
+          email?: string
+          empresa?: string
+          id?: string
+          nome_completo?: string
+          telefone?: string
+        }
+        Relationships: []
+      }
+      materiais: {
+        Row: {
+          created_at: string
+          descricao: string
+          evento: string
+          file_url: string | null
+          icone: string
+          id: string
+          ordem: number
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          evento: string
+          file_url?: string | null
+          icone: string
+          id?: string
+          ordem?: number
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          evento?: string
+          file_url?: string | null
+          icone?: string
+          id?: string
+          ordem?: number
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
