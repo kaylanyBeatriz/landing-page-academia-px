@@ -37,7 +37,7 @@
   <table>
     <tr><th>Coluna</th><th>Descrição</th></tr>
     <tr><td><code>id</code></td><td>PK</td></tr>
-    <tr><td><code>lp_slug</code></td><td>identifica a landing page (aqui: <code>kit-nr-35</code>)</td></tr>
+    <tr><td><code>lp_slug</code></td><td>identifica a landing page (aqui: <code>curso-nr-35</code>)</td></tr>
     <tr><td><code>full_name</code></td><td>nome completo</td></tr>
     <tr><td><code>job_title</code></td><td>cargo</td></tr>
     <tr><td><code>email</code></td><td><code>citext</code> — não diferencia maiúscula/minúscula</td></tr>
@@ -92,7 +92,7 @@
 
   <h3>3.1 lp_list_materials <span class="badge">carregamento da página</span></h3>
   <pre>POST /rest/v1/rpc/lp_list_materials
-{ "p_lp_slug": "kit-nr-35" }</pre>
+{ "p_lp_slug": "curso-nr-35" }</pre>
   <p>Retorna a lista de materiais ativos da LP (sem links de download) para montar a grid.
   Chamada em <code>loadMaterials()</code>.</p>
 
@@ -106,7 +106,7 @@
   <pre>POST /rest/v1/rpc/lp_register_lead
 {
   "p": {
-    "lp_slug": "kit-nr-35",
+    "lp_slug": "curso-nr-35",
     "full_name": "…", "job_title": "…", "email": "…",
     "phone": "…", "company": "…",
     "consent_given": true, "consent_version": "v1",
@@ -126,21 +126,68 @@
   Resposta: <code>{ "download_url": "…", "expires_in": 300, "name": "…" }</code>.
   Token inválido (erro <code>28000</code>) limpa a sessão e reexibe o formulário.</p>
 
-  <h2>4. Configuração usada no front (script.js)</h2>
+  <h3>3.5 lp_check_email <span class="badge">login — checagem</span></h3>
+  <pre>POST /rest/v1/rpc/lp_check_email
+{ "p_lp_slug": "curso-nr-35", "p_email": "…" }</pre>
+  <p>Não fazia parte do contrato original — criada sob demanda pra viabilizar o login só com
+  e-mail. Retorna <code>true</code>/<code>false</code>, sem expor nome ou qualquer outro dado.
+  Usada em <code>api/register-lead.php</code> (decide se notifica o admin) e como checagem prévia
+  ao login.</p>
+
+  <h3>3.6 lp_resend_access <span class="badge">login — recupera acesso</span></h3>
+  <pre>POST /rest/v1/rpc/lp_resend_access
+{ "p_lp_slug": "curso-nr-35", "p_email": "…" }</pre>
+  <p>Também criada sob demanda. Devolve <code>access_token</code> + <code>full_name</code> +
+  <code>expires_at</code> do lead já cadastrado, sem exigir <code>full_name</code> de novo — evita
+  sobrescrever o nome real ao "logar" só com e-mail. Retorna vazio se o e-mail não existir.
+  Rate limit: 10 chamadas/minuto por IP (tabela <code>lp_resend_requests</code>). Usada em
+  <code>api/send-login.php</code>.</p>
+
+  <h2>4. Backend PHP (api/)</h2>
+  <p>Como o envio de e-mail exige uma credencial secreta (senha de app do Gmail) que não pode
+  ficar no <code>script.js</code> público, o cadastro completo e o login passam por dois endpoints
+  PHP antes de tocar no Supabase:</p>
+  <table>
+    <tr><th>Arquivo</th><th>Função</th></tr>
+    <tr><td><code>api/register-lead.php</code></td><td>Recebe o formulário completo, chama <code>lp_check_email</code> + <code>lp_register_lead</code>, e dispara e-mail de aviso (<code>ADMIN_NOTIFY_EMAILS</code>) só em cadastro novo de verdade.</td></tr>
+    <tr><td><code>api/send-login.php</code></td><td>Recebe só o e-mail, chama <code>lp_resend_access</code>, e manda por e-mail um link <code>?login_token=…</code> — o acesso só libera quando a pessoa clica.</td></tr>
+    <tr><td><code>api/mailer.php</code></td><td>Envio via SMTP do Gmail (<code>smtp.gmail.com:465</code>), implementado com sockets puros do PHP, sem biblioteca externa.</td></tr>
+    <tr><td><code>api/config.php</code></td><td><b>Não versionado.</b> Guarda a senha de app do Gmail e os demais segredos/config. Copie de <code>api/config.example.php</code>.</td></tr>
+  </table>
+  <div class="note">
+    A sessão liberada no navegador expira em <b>15 minutos</b> (client-side, via
+    <code>localStorage</code> — não é uma expiração real do <code>access_token</code>, que
+    continua valendo 180 dias no banco).
+  </div>
+
+  <h2>5. Configuração usada no front (script.js)</h2>
   <table>
     <tr><th>Item</th><th>Valor</th></tr>
     <tr><td>Base URL</td><td><code>https://supabase.px.center</code></td></tr>
     <tr><td>Header <code>Content-Profile</code></td><td><code>website_academia_px</code></td></tr>
-    <tr><td><code>lp_slug</code> desta LP</td><td><code>kit-nr-35</code></td></tr>
+    <tr><td><code>lp_slug</code> desta LP</td><td><code>curso-nr-35</code></td></tr>
     <tr><td>Chave <code>localStorage</code> do token</td><td><code>academia_kit_nr35_token</code></td></tr>
     <tr><td>Versão de consentimento</td><td><code>v1</code></td></tr>
   </table>
 
+  <h2>6. Histórico de alterações na base de testes (website_academia_px_dev)</h2>
+  <p>Mudanças de dado feitas direto no banco durante os testes, fora do fluxo normal do front
+  (via SQL, por quem tem acesso admin ao Supabase). Registrado aqui porque não passa pelo Git —
+  fica só no banco.</p>
+  <table>
+    <tr><th>O quê</th><th>Detalhe</th></tr>
+    <tr><td>Criação de 6 materiais</td><td><code>guia-de-uso</code>, <code>formulario</code>, <code>ppt1</code>, <code>ppt2</code>, <code>ebook</code>, <code>canva</code> — inseridos com <code>is_active = false</code> (rascunho).</td></tr>
+    <tr><td>Migração de <code>lp_slug</code></td><td>De <code>kit-nr-35</code> para <code>curso-nr-35</code>, nas três tabelas (<code>lp_materials</code>, <code>lp_leads</code>, <code>lp_resend_requests</code>) — corrigindo uma inconsistência causada por uma edição manual anterior que só tinha alterado <code>lp_materials</code>.</td></tr>
+    <tr><td>Ativação do material <code>canva</code></td><td><code>is_active = true</code>, pra testar a grid aparecendo na LP.</td></tr>
+    <tr><td>Renomeação de título/descrição</td><td><code>guia-de-uso</code> → "Guia de uso do material"; <code>formulario</code> → "Formulário de avaliação final"; <code>ppt1</code> → "Slides com aulas e atividades práticas"; <code>ebook</code> → "E-book completo da NR 35"; <code>canva</code> → título "Modelo editável de certificado", <code>name</code> mantido como identificador próprio (fora do padrão hífen-minúsculo dos demais, por decisão explícita).</td></tr>
+    <tr><td>Desativação do <code>ppt2</code></td><td><code>is_active = false</code> — não faz mais parte do kit.</td></tr>
+    <tr><td>Criação de <code>lp_check_email</code></td><td>Nova função <code>SECURITY DEFINER</code>, <code>GRANT EXECUTE</code> pra <code>anon</code> — não existia no contrato original.</td></tr>
+    <tr><td>Criação de <code>lp_resend_access</code> + tabela <code>lp_resend_requests</code></td><td>Idem — viabiliza login só com e-mail sem sobrescrever o nome real do lead.</td></tr>
+  </table>
   <div class="note">
-    <b>Status atual:</b> a chamada <code>lp_list_materials</code> para <code>kit-nr-35</code> está
-    retornando lista vazia — os materiais ainda não foram cadastrados em
-    <code>/relatorios/materiais</code> pelo time responsável. A integração de código está pronta
-    e testada (conectividade confirmada, status 200).
+    Essas mesmas alterações (materiais, RPCs novas) ainda <b>não foram replicadas em produção</b>
+    (<code>website_academia_px</code>) — só existem em <code>website_academia_px_dev</code> até
+    aqui.
   </div>
 </body>
 </html>
