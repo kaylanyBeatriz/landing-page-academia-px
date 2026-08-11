@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Integração Academia PX — Kit NR 35</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; padding: 40px; max-width: 900px; margin: 0 auto; font-size: 13px; }
+  h1 { font-size: 21px; margin-bottom: 4px; color: #4b21a6; }
+  h2 { font-size: 15px; margin-top: 30px; margin-bottom: 8px; color: #4b21a6; border-bottom: 2px solid #4b21a6; padding-bottom: 4px; }
+  h3 { font-size: 13px; margin-top: 18px; margin-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11.5px; }
+  th, td { border: 1px solid #ccc; padding: 6px 9px; text-align: left; vertical-align: top; }
+  th { background: #f3eefe; color: #4b21a6; font-weight: 700; }
+  tr:nth-child(even) td { background: #fafafa; }
+  code, pre { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 11px; font-family: Consolas, monospace; }
+  pre { padding: 10px; overflow-x: auto; white-space: pre-wrap; }
+  .subtitle { color: #666; font-size: 12px; margin-bottom: 0; }
+  .badge { display: inline-block; background: #f3eefe; color: #4b21a6; border-radius: 4px; padding: 2px 8px; font-size: 10.5px; font-weight: 700; margin-left: 6px; }
+  .note { background: #fff8e6; border: 1px solid #f0d98c; border-radius: 6px; padding: 10px 14px; font-size: 12px; margin: 10px 0; }
+  .rule { background: #fdeeee; border: 1px solid #f0b8b8; border-radius: 6px; padding: 10px 14px; font-size: 12px; margin: 10px 0; }
+  @media print {
+    body { padding: 10px; }
+    h2 { break-before: auto; }
+  }
+</style>
+</head>
+<body>
+  <h1>Integração Academia PX — Kit NR 35</h1>
+  <p class="subtitle">Landing page fora do monorepo → Caminho B (PostgREST direto via chave pública anon)</p>
+  <p class="subtitle">Fonte do contrato: README-LP-ACADEMIA.md · Schema: <code>website_academia_px</code></p>
+
+  <h2>1. Tabelas do banco (schema real, já existente no Supabase)</h2>
+  <p>Esta LP não cria nem altera tabelas — apenas consome os dados através das 4 funções da
+  seção 3. As tabelas abaixo são as que já existem no banco da Academia PX.</p>
+
+  <h3>1.1 lp_leads — pessoas que se cadastraram</h3>
+  <table>
+    <tr><th>Coluna</th><th>Descrição</th></tr>
+    <tr><td><code>id</code></td><td>PK</td></tr>
+    <tr><td><code>lp_slug</code></td><td>identifica a landing page (aqui: <code>kit-nr-35</code>)</td></tr>
+    <tr><td><code>full_name</code></td><td>nome completo</td></tr>
+    <tr><td><code>job_title</code></td><td>cargo</td></tr>
+    <tr><td><code>email</code></td><td><code>citext</code> — não diferencia maiúscula/minúscula</td></tr>
+    <tr><td><code>phone</code></td><td>telefone</td></tr>
+    <tr><td><code>company</code></td><td>empresa</td></tr>
+    <tr><td><code>consent_given</code></td><td>boolean — precisa ser <code>true</code> de verdade</td></tr>
+    <tr><td><code>consent_at</code>, <code>consent_version</code></td><td>quando e sob qual texto o consentimento foi dado</td></tr>
+    <tr><td><code>access_token</code></td><td>token opaco (não é JWT) devolvido após o cadastro</td></tr>
+    <tr><td><code>token_expires_at</code></td><td>180 dias após emissão</td></tr>
+    <tr><td><code>utm_source</code>, <code>utm_medium</code>, <code>utm_campaign</code>, <code>utm_content</code>, <code>utm_term</code>, <code>gclid</code>, <code>fbclid</code>, <code>referrer</code>, <code>landing_page</code></td><td>origem/campanha, capturados da URL pela LP</td></tr>
+    <tr><td><code>user_agent</code>, <code>ip_address</code></td><td>preenchidos pelo servidor — a LP nunca envia isso</td></tr>
+    <tr><td><code>created_at</code>, <code>updated_at</code></td><td>—</td></tr>
+  </table>
+
+  <h3>1.2 lp_materials — catálogo de materiais para download</h3>
+  <table>
+    <tr><th>Coluna</th><th>Descrição</th></tr>
+    <tr><td><code>id</code></td><td>PK</td></tr>
+    <tr><td><code>lp_slug</code></td><td>a qual LP o material pertence</td></tr>
+    <tr><td><code>name</code></td><td>identificador estável dentro da LP</td></tr>
+    <tr><td><code>title</code></td><td>título exibido no card</td></tr>
+    <tr><td><code>description</code></td><td>descrição do card</td></tr>
+    <tr><td><code>file_type</code></td><td>"PDF/DOCX", "PPTX", "Canva"…</td></tr>
+    <tr><td><code>icon</code></td><td><code>clipboard</code>, <code>presentation</code>, <code>book</code> ou <code>palette</code></td></tr>
+    <tr><td><code>storage_key</code> / <code>external_url</code></td><td>arquivo no bucket privado <b>ou</b> link externo (Canva) — exatamente um dos dois</td></tr>
+    <tr><td><code>sort_order</code></td><td>ordenação na grid</td></tr>
+    <tr><td><code>is_active</code></td><td>material novo nasce <code>false</code> (rascunho)</td></tr>
+    <tr><td><code>download_count</code></td><td>incrementado só pelo servidor a cada download</td></tr>
+    <tr><td><code>created_at</code>, <code>updated_at</code></td><td>—</td></tr>
+  </table>
+  <div class="rule">
+    Esta LP <b>nunca</b> escreve em <code>lp_materials</code>. Cadastro e publicação de
+    material são feitos por outra área do sistema (<code>/relatorios/materiais</code>), com login.
+  </div>
+
+  <h3>1.3 lp_downloads — histórico de downloads</h3>
+  <table>
+    <tr><th>Coluna</th><th>Descrição</th></tr>
+    <tr><td><code>id</code></td><td>PK</td></tr>
+    <tr><td><code>lead_id</code></td><td>FK → <code>lp_leads.id</code>, <code>on delete cascade</code></td></tr>
+    <tr><td><code>material_id</code></td><td>FK → <code>lp_materials.id</code></td></tr>
+    <tr><td><code>downloaded_at</code></td><td>—</td></tr>
+    <tr><td><code>user_agent</code>, <code>ip_address</code></td><td>preenchidos pelo servidor</td></tr>
+  </table>
+
+  <h2>2. O que a landing page NÃO consegue fazer (por desenho)</h2>
+  <p>A chave pública (<code>anon</code>) usada no front não tem permissão de leitura/escrita em
+  nenhuma tabela acima — só executa as 4 funções da seção 3. Isso é o que garante que o link do
+  arquivo não vaza antes do cadastro (gated content).</p>
+
+  <h2>3. Funções (RPC) consumidas pela LP — script.js</h2>
+
+  <h3>3.1 lp_list_materials <span class="badge">carregamento da página</span></h3>
+  <pre>POST /rest/v1/rpc/lp_list_materials
+{ "p_lp_slug": "kit-nr-35" }</pre>
+  <p>Retorna a lista de materiais ativos da LP (sem links de download) para montar a grid.
+  Chamada em <code>loadMaterials()</code>.</p>
+
+  <h3>3.2 lp_validate_token <span class="badge">carregamento da página</span></h3>
+  <pre>POST /rest/v1/rpc/lp_validate_token
+{ "p_token": "&lt;token salvo no localStorage&gt;" }</pre>
+  <p>Se houver token salvo (<code>academia_kit_nr35_token</code>), valida a sessão e libera o
+  acesso automaticamente, sem pedir o formulário de novo. Token inválido/expirado é removido.</p>
+
+  <h3>3.3 lp_register_lead <span class="badge">envio do formulário</span></h3>
+  <pre>POST /rest/v1/rpc/lp_register_lead
+{
+  "p": {
+    "lp_slug": "kit-nr-35",
+    "full_name": "…", "job_title": "…", "email": "…",
+    "phone": "…", "company": "…",
+    "consent_given": true, "consent_version": "v1",
+    "utm_source": "…", "utm_medium": "…", "utm_campaign": "…",
+    "utm_content": "…", "utm_term": "…", "gclid": "…", "fbclid": "…",
+    "referrer": "…", "landing_page": "…"
+  }
+}</pre>
+  <p>Resposta: <code>{ "access_token": "…", "expires_at": "…" }</code> — salvo em
+  <code>localStorage</code> e usado para liberar a grid. Reenviar o mesmo e-mail atualiza o
+  lead existente em vez de duplicar.</p>
+
+  <h3>3.4 lp_register_download <span class="badge">clique no card</span></h3>
+  <pre>POST /rest/v1/rpc/lp_register_download
+{ "p_token": "…", "p_material_id": "…uuid…" }</pre>
+  <p>Chamada só no clique (nunca no carregamento) — o link expira em 5 minutos.
+  Resposta: <code>{ "download_url": "…", "expires_in": 300, "name": "…" }</code>.
+  Token inválido (erro <code>28000</code>) limpa a sessão e reexibe o formulário.</p>
+
+  <h2>4. Configuração usada no front (script.js)</h2>
+  <table>
+    <tr><th>Item</th><th>Valor</th></tr>
+    <tr><td>Base URL</td><td><code>https://supabase.px.center</code></td></tr>
+    <tr><td>Header <code>Content-Profile</code></td><td><code>website_academia_px</code></td></tr>
+    <tr><td><code>lp_slug</code> desta LP</td><td><code>kit-nr-35</code></td></tr>
+    <tr><td>Chave <code>localStorage</code> do token</td><td><code>academia_kit_nr35_token</code></td></tr>
+    <tr><td>Versão de consentimento</td><td><code>v1</code></td></tr>
+  </table>
+
+  <div class="note">
+    <b>Status atual:</b> a chamada <code>lp_list_materials</code> para <code>kit-nr-35</code> está
+    retornando lista vazia — os materiais ainda não foram cadastrados em
+    <code>/relatorios/materiais</code> pelo time responsável. A integração de código está pronta
+    e testada (conectividade confirmada, status 200).
+  </div>
+</body>
+</html>

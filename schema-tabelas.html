@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Schema do Banco de Dados</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; padding: 40px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  h2 { font-size: 15px; margin-top: 36px; margin-bottom: 8px; color: #4b21a6; border-bottom: 2px solid #4b21a6; padding-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 12px; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: #f3eefe; color: #4b21a6; font-weight: 700; }
+  tr:nth-child(even) td { background: #fafafa; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  .subtitle { color: #666; font-size: 12px; margin-bottom: 0; }
+  @media print {
+    body { padding: 10px; }
+    h2 { break-before: auto; }
+  }
+</style>
+</head>
+<body>
+  <h1>Schema do Banco de Dados — Kit NR 35</h1>
+  <p class="subtitle">Tabelas: usuarios, materiais, usuario_materiais</p>
+
+  <h2>1. usuarios</h2>
+  <table>
+    <tr><th>Coluna</th><th>Tipo</th><th>Regras</th></tr>
+    <tr><td><code>id</code></td><td>UUID</td><td>PK, gerado automaticamente</td></tr>
+    <tr><td><code>nome_completo</code></td><td>TEXT</td><td>obrigatório</td></tr>
+    <tr><td><code>cargo</code></td><td>TEXT</td><td>obrigatório</td></tr>
+    <tr><td><code>email</code></td><td>TEXT</td><td>obrigatório</td></tr>
+    <tr><td><code>telefone</code></td><td>TEXT</td><td>obrigatório</td></tr>
+    <tr><td><code>empresa</code></td><td>TEXT</td><td>obrigatório</td></tr>
+    <tr><td><code>consentimento_lgpd</code></td><td>BOOLEAN</td><td>obrigatório, default false</td></tr>
+    <tr><td><code>token_acesso</code></td><td>TEXT</td><td>token/JWT emitido para manter "desbloqueado"</td></tr>
+    <tr><td><code>created_at</code></td><td>TIMESTAMP</td><td>default agora</td></tr>
+  </table>
+
+  <h2>2. materiais</h2>
+  <table>
+    <tr><th>Coluna</th><th>Tipo</th><th>Regras</th></tr>
+    <tr><td><code>id</code></td><td>UUID</td><td>PK, gerado automaticamente</td></tr>
+    <tr><td><code>nome</code></td><td>TEXT</td><td>obrigatório</td></tr>
+    <tr><td><code>titulo</code></td><td>TEXT</td><td>—</td></tr>
+    <tr><td><code>descricao</code></td><td>TEXT</td><td>—</td></tr>
+    <tr><td><code>tipo</code></td><td>TEXT</td><td>"PDF/DOCX", "PPTX", "Canva" etc</td></tr>
+    <tr><td><code>icone</code></td><td>TEXT</td><td>"clipboard", "presentation", "book", "palette"</td></tr>
+    <tr><td><code>link_download</code></td><td>TEXT</td><td>obrigatório</td></tr>
+    <tr><td><code>arquivo_key</code></td><td>TEXT</td><td>caminho/key no storage (S3 etc), não a URL pública</td></tr>
+    <tr><td><code>ordem</code></td><td>INTEGER</td><td>opcional, ordenação na grid</td></tr>
+    <tr><td><code>ativo</code></td><td>BOOLEAN</td><td>opcional, permite esconder sem apagar</td></tr>
+    <tr><td><code>contador_clicks</code></td><td>INTEGER</td><td>default 0, incrementado a cada download</td></tr>
+    <tr><td><code>created_at</code></td><td>TIMESTAMP</td><td>default agora</td></tr>
+  </table>
+
+  <h2>3. usuario_materiais (tabela de vínculo)</h2>
+  <table>
+    <tr><th>Coluna</th><th>Tipo</th><th>Regras</th></tr>
+    <tr><td><code>id</code></td><td>UUID</td><td>PK, gerado automaticamente</td></tr>
+    <tr><td><code>usuario_id</code></td><td>UUID</td><td>FK → usuarios.id, obrigatório</td></tr>
+    <tr><td><code>material_id</code></td><td>UUID</td><td>FK → materiais.id, obrigatório</td></tr>
+    <tr><td><code>downloaded_at</code></td><td>TIMESTAMP</td><td>default agora (quando ocorreu o download)</td></tr>
+  </table>
+</body>
+</html>
